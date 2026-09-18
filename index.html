@@ -1,0 +1,1050 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Street Sprint</title>
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        html,
+        body {
+            margin: 0;
+            width: 100%;
+            height: 100%;
+            background: #111;
+            overflow: hidden;
+        }
+
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        #game {
+            display: block;
+
+            /* Responsive display */
+            width: min(100vw, calc(100vh * 1.5));
+            height: min(100vh, calc(100vw / 1.5));
+
+            /* Keep correct game shape */
+            aspect-ratio: 3 / 2;
+
+            background: #222;
+            border: 3px solid white;
+        }#startScreen {
+    position: fixed;
+    inset: 0;
+
+    background: rgba(0, 0, 0, 0.78);
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    text-align: center;
+
+    z-index: 10;
+}
+
+#gameTitle {
+    font-family: Impact, Haettenschweiler, "Arial Black", sans-serif;
+
+    font-size: 110px;
+    font-weight: 900;
+
+    line-height: 0.85;
+    letter-spacing: 6px;
+
+    text-align: center;
+
+    color: white;
+
+    text-shadow:
+        7px 7px 0 #000,
+        12px 12px 0 rgba(255, 255, 255, 0.15);
+
+    width: 100%;
+}
+
+#startButton {
+    margin-top: 55px;
+
+    padding: 18px 60px;
+
+    font-family: Impact, Haettenschweiler, "Arial Black", sans-serif;
+    font-size: 30px;
+    letter-spacing: 3px;
+
+    color: white;
+    background: #111;
+
+    border: 4px solid white;
+    border-radius: 6px;
+
+    cursor: pointer;
+}
+
+#startButton:hover {
+    background: white;
+    color: black;
+}
+    </style>
+
+</head>
+
+<body>
+
+<div id="startScreen">
+
+    <div id="gameTitle">
+        STREET
+        <br>
+        SPRINT
+    </div>
+
+    <button id="startButton">
+        START
+    </button>
+
+</div>
+
+<canvas id="game" width="900" height="600"></canvas>
+
+<script>
+"use strict";
+
+// =========================================
+// SETUP
+// =========================================
+
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+
+const GAME_WIDTH = 900;
+const GAME_HEIGHT = 600;
+
+
+// =========================================
+// ROAD
+// =========================================
+
+const road = {
+    x: 240,
+    width: 420,
+    laneWidth: 140
+};
+
+
+// =========================================
+// PLAYER
+// =========================================
+
+const player = {
+    lane: 1,
+
+    x: 0,
+    targetX: 0,
+
+    y: 450,
+
+    width: 70,
+    height: 120,
+
+    laneChangeSpeed: 0.25
+};
+
+
+// =========================================
+// GAME STATE
+// =========================================
+
+let traffic = [];
+
+let score = 0;
+
+let bestScore = Number(
+    localStorage.getItem("streetSprintBest") || 0
+);
+
+let gameSpeed = 5;
+
+let spawnTimer = 70;
+
+let roadOffset = 0;
+
+let gameRunning = false;
+
+
+// =========================================
+// TRAFFIC COLORS
+// =========================================
+
+const trafficColors = [
+    "#d8d8d8",
+    "#777777",
+    "#444444",
+    "#b83232",
+    "#e2a51c"
+];
+
+
+// =========================================
+// LANE HELPERS
+// =========================================
+
+function getLaneCenter(lane) {
+
+    return (
+        road.x +
+        lane * road.laneWidth +
+        road.laneWidth / 2
+    );
+}
+
+
+function setPlayerLane() {
+
+    player.targetX =
+        getLaneCenter(player.lane) -
+        player.width / 2;
+}
+
+
+// =========================================
+// PLAYER LANE SWITCHING
+// =========================================
+
+function changeLane(direction) {
+
+    if (!gameRunning) {
+        return;
+    }
+
+    const newLane =
+        player.lane + direction;
+
+    // Don't leave the road
+    if (newLane < 0 || newLane > 2) {
+        return;
+    }
+
+    player.lane = newLane;
+
+    setPlayerLane();
+}
+
+
+// =========================================
+// INPUT
+// =========================================
+
+window.addEventListener("keydown", (event) => {
+
+    const key = event.key.toLowerCase();
+
+    if (
+        key === "arrowleft" ||
+        key === "arrowright" ||
+        key === "a" ||
+        key === "d" ||
+        key === "r"
+    ) {
+        event.preventDefault();
+    }
+
+    // Prevent holding the key from
+    // machine-gunning lane changes
+    if (event.repeat) {
+        return;
+    }
+
+    if (
+        key === "arrowleft" ||
+        key === "a"
+    ) {
+        changeLane(-1);key 
+    }
+
+    if (
+        key === "arrowright" ||
+        key === "d"
+    ) {
+        changeLane(1);
+    }
+
+    if (
+        key === "r" &&
+        !gameRunning
+    ) {
+        resetGame();
+gameRunning = true;
+    }
+});
+
+
+// =========================================
+// RESET
+// =========================================
+
+function resetGame() {
+
+    traffic = [];
+
+    score = 0;
+
+    gameSpeed = 5;
+
+    spawnTimer = 70;
+
+    roadOffset = 0;
+
+    player.lane = 1;
+
+    player.x =
+        getLaneCenter(1) -
+        player.width / 2;
+
+    player.targetX = player.x;
+
+    gameRunning = false;
+}
+
+
+// =========================================
+// HELPERS
+// =========================================
+
+function collision(a, b) {
+
+    const padding = 8;
+
+    return (
+        a.x - padding < b.x + b.width &&
+        a.x + a.width + padding > b.x &&
+        a.y - padding < b.y + b.height &&
+        a.y + a.height + padding > b.y
+    );
+}
+
+
+// =========================================
+// SPAWN TRAFFIC WAVE
+// =========================================
+
+function spawnTrafficWave() {
+
+    /*
+        IMPORTANT RULE:
+
+        There are always 3 lanes.
+
+        A wave can block:
+        - 1 lane
+        - OR 2 lanes
+
+        It can NEVER block all 3.
+
+        Therefore at least one lane is
+        ALWAYS available.
+    */
+
+    const blockCount =
+        Math.random() < 0.45
+            ? 1
+            : 2;
+
+
+    // Start with all lanes available
+    const availableLanes = [0, 1, 2];
+
+    // Randomly choose blocked lanes
+    for (let i = 0; i < blockCount; i++) {
+
+        const index =
+            Math.floor(
+                Math.random() *
+                availableLanes.length
+            );
+
+        const lane =
+            availableLanes.splice(index, 1)[0];
+
+        spawnTrafficCar(lane);
+    }
+}
+
+
+// =========================================
+// SPAWN INDIVIDUAL TRAFFIC CAR
+// =========================================
+
+function spawnTrafficCar(lane) {
+
+    const width = 65;
+    const height = 110;
+
+    const laneCenter =
+        getLaneCenter(lane);
+
+    traffic.push({
+
+        lane: lane,
+
+        x:
+            laneCenter -
+            width / 2,
+
+        y:
+            -height - 30,
+
+        width: width,
+        height: height,
+
+        speed: gameSpeed * 0.35,
+
+        color:
+            trafficColors[
+                Math.floor(
+                    Math.random() *
+                    trafficColors.length
+                )
+            ]
+    });
+}
+
+
+// =========================================
+// UPDATE
+// =========================================
+
+
+function update() {
+
+    if (!gameRunning) {
+        return;
+    }
+
+
+    // -----------------------------------------
+    // Smoothly move player into target lane
+    // -----------------------------------------
+
+    player.x +=
+        (player.targetX - player.x) *
+        player.laneChangeSpeed;
+
+
+    // -----------------------------------------
+    // Moving road
+    // -----------------------------------------
+
+    roadOffset += gameSpeed;
+
+    if (roadOffset >= 80) {
+        roadOffset -= 80;
+    }
+
+
+    // -----------------------------------------
+    // Spawn traffic waves
+    // -----------------------------------------
+
+    spawnTimer--;
+
+    if (spawnTimer <= 0) {
+
+        spawnTrafficWave();
+
+        /*
+            Faster game = waves arrive
+            somewhat more frequently.
+
+            But there is still a minimum
+            reaction gap.
+        */
+
+        spawnTimer = Math.max(
+            130,
+            170 - gameSpeed * 2
+        );
+    }
+
+
+    // -----------------------------------------
+    // Move traffic
+    // -----------------------------------------
+
+    for (const car of traffic) {
+
+        car.y += car.speed;
+
+
+        // Collision
+        if (collision(player, car)) {
+
+            endGame();
+
+            break;
+        }
+    }
+
+
+    // -----------------------------------------
+    // Remove cars that left the screen
+    // -----------------------------------------
+
+    traffic = traffic.filter(
+        (car) =>
+            car.y <
+            GAME_HEIGHT + 150
+    );
+
+
+    // -----------------------------------------
+    // Score
+    // -----------------------------------------
+
+    score += 0.1;
+
+
+    // -----------------------------------------
+    // Increase difficulty
+    // -----------------------------------------
+
+    gameSpeed =
+        Math.min(
+            13,
+            5 + score / 120
+        );
+
+
+    /*
+        IMPORTANT:
+
+        New cars spawned later use the
+        current gameSpeed.
+
+        Existing cars keep their speed
+        so they don't suddenly teleport
+        to a new velocity.
+    */
+}
+
+
+// =========================================
+// GAME OVER
+// =========================================
+
+function endGame() {
+
+    gameRunning = false;
+
+    const finalScore =
+        Math.floor(score);
+
+    if (finalScore > bestScore) {
+
+        bestScore = finalScore;
+
+        localStorage.setItem(
+            "streetSprintBest",
+            bestScore
+        );
+    }
+}
+
+
+// =========================================
+// DRAW BACKGROUND
+// =========================================
+
+function drawBackground() {
+
+    // Grass
+    ctx.fillStyle = "#23752c";
+
+    ctx.fillRect(
+        0,
+        0,
+        GAME_WIDTH,
+        GAME_HEIGHT
+    );
+
+
+    // Road
+    ctx.fillStyle = "#333333";
+
+    ctx.fillRect(
+        road.x,
+        0,
+        road.width,
+        GAME_HEIGHT
+    );
+
+
+    // Road edges
+    ctx.fillStyle = "#eeeeee";
+
+    ctx.fillRect(
+        road.x + 10,
+        0,
+        5,
+        GAME_HEIGHT
+    );
+
+    ctx.fillRect(
+        road.x +
+        road.width -
+        15,
+        0,
+        5,
+        GAME_HEIGHT
+    );
+
+
+    // Lane markings
+    ctx.fillStyle = "#ffffff";
+
+    for (
+        let y = -80 + roadOffset;
+        y < GAME_HEIGHT + 80;
+        y += 80
+    ) {
+
+        // First divider
+        ctx.fillRect(
+            road.x +
+            road.laneWidth -
+            4,
+
+            y,
+
+            8,
+            42
+        );
+
+
+        // Second divider
+        ctx.fillRect(
+            road.x +
+            road.laneWidth * 2 -
+            4,
+
+            y,
+
+            8,
+            42
+        );
+    }
+}
+
+
+// =========================================
+// DRAW CAR
+// =========================================
+
+function drawCar(
+    car,
+    isPlayer = false
+) {
+
+    ctx.save();
+
+    ctx.translate(
+        car.x,
+        car.y
+    );
+
+
+    // Main body
+    ctx.fillStyle =
+        isPlayer
+            ? "#3478ff"
+            : car.color;
+
+    ctx.fillRect(
+        0,
+        15,
+        car.width,
+        car.height - 30
+    );
+
+
+    // Roof
+    ctx.fillStyle = "#202020";
+
+    ctx.fillRect(
+        9,
+        30,
+        car.width - 18,
+        50
+    );
+
+
+    // Windows
+    ctx.fillStyle = "#111111";
+
+    ctx.fillRect(
+        14,
+        34,
+        car.width - 28,
+        20
+    );
+
+    ctx.fillRect(
+        14,
+        59,
+        car.width - 28,
+        14
+    );
+
+
+    /*
+        Player faces UP.
+
+        Traffic faces UP.
+    */
+
+    if (isPlayer) {
+
+        // Headlights
+        ctx.fillStyle = "#ffffff";
+
+        ctx.fillRect(
+            8,
+            5,
+            17,
+            8
+        );
+
+        ctx.fillRect(
+            car.width - 25,
+            5,
+            17,
+            8
+        );
+
+
+        // Taillights
+        ctx.fillStyle = "#ff3030";
+
+        ctx.fillRect(
+            8,
+            car.height - 14,
+            17,
+            8
+        );
+
+        ctx.fillRect(
+            car.width - 25,
+            car.height - 14,
+            17,
+            8
+        );
+
+    } else {
+
+        // Traffic headlights
+        ctx.fillStyle = "#ff3030";
+
+        ctx.fillRect(
+            8,
+            car.height - 14,
+            17,
+            8
+        );
+
+        ctx.fillRect(
+            car.width - 25,
+            car.height - 14,
+            17,
+            8
+        );
+
+
+        // Traffic taillights
+        ctx.fillStyle = "#ffffff";
+
+        ctx.fillRect(
+            8,
+            5,
+            17,
+            8
+        );
+
+        ctx.fillRect(
+            car.width - 25,
+            5,
+            17,
+            8
+        );
+    }
+
+
+    // Wheels
+    ctx.fillStyle = "#090909";
+
+    ctx.fillRect(
+        -6,
+        28,
+        10,
+        30
+    );
+
+    ctx.fillRect(
+        car.width - 4,
+        28,
+        10,
+        30
+    );
+
+    ctx.fillRect(
+        -6,
+        car.height - 48,
+        10,
+        30
+    );
+
+    ctx.fillRect(
+        car.width - 4,
+        car.height - 48,
+        10,
+        30
+    );
+
+
+    ctx.restore();
+}
+
+
+// =========================================
+// DRAW HUD
+// =========================================
+
+function drawHUD() {
+
+    ctx.fillStyle =
+        "rgba(0, 0, 0, 0.6)";
+
+    ctx.fillRect(
+        20,
+        20,
+        300,
+        90
+    );
+
+
+    ctx.fillStyle = "#ffffff";
+
+    ctx.font =
+        "bold 28px Arial";
+
+    ctx.fillText(
+        "STREET SPRINT",
+        35,
+        51
+    );
+
+
+    ctx.font =
+        "18px Arial";
+
+    ctx.fillText(
+        `Score: ${Math.floor(score)}`,
+        35,
+        80
+    );
+
+    ctx.fillText(
+        `Best: ${bestScore}`,
+        160,
+        80
+    );
+
+
+    ctx.font =
+        "15px Arial";
+
+    ctx.fillText(
+        "← → / A D",
+        35,
+        100
+    );
+}
+
+
+// =========================================
+// GAME OVER
+// =========================================
+
+function drawGameOver() {
+
+    if (gameRunning) {
+        return;
+    }
+
+
+    ctx.fillStyle =
+        "rgba(0, 0, 0, 0.72)";
+
+    ctx.fillRect(
+        0,
+        0,
+        GAME_WIDTH,
+        GAME_HEIGHT
+    );
+
+
+    ctx.textAlign = "center";
+
+    ctx.fillStyle = "#ffffff";
+
+    ctx.font =
+        "bold 64px Arial";
+
+    ctx.fillText(
+        "CRASH!",
+        GAME_WIDTH / 2,
+        260
+    );
+
+
+    ctx.font =
+        "28px Arial";
+
+    ctx.fillText(
+        `Score: ${Math.floor(score)}`,
+        GAME_WIDTH / 2,
+        315
+    );
+
+
+    ctx.font =
+        "20px Arial";
+
+    ctx.fillText(
+        "Press R to restart",
+        GAME_WIDTH / 2,
+        355
+    );
+
+
+    ctx.textAlign = "left";
+}
+
+
+// =========================================
+// DRAW
+// =========================================
+
+function draw() {
+
+    drawBackground();
+
+
+    // Traffic
+    for (const car of traffic) {
+        drawCar(car, false);
+    }
+
+
+    // Player
+    drawCar(player, true);
+
+
+    drawHUD();
+
+    drawGameOver();
+}
+
+
+// =========================================
+// MAIN LOOP
+// =========================================
+
+function gameLoop() {
+
+    update();
+
+    draw();
+
+    requestAnimationFrame(
+        gameLoop
+    );
+}
+
+
+// =========================================
+// START
+// =========================================
+
+player.x =
+    getLaneCenter(player.lane) -
+    player.width / 2;
+
+player.targetX = player.x;
+document
+    .getElementById("startButton")
+    .addEventListener("click", () => {
+
+        document.getElementById("startScreen").style.display = "none";
+
+        gameRunning = true;
+
+        startEngineSound();
+    });
+resetGame();
+
+// =========================================
+// ENGINE SOUND
+// =========================================
+
+let audioContext;
+let engineOscillator;
+let engineGain;
+
+function startEngineSound() {
+
+    if (audioContext) {
+        return;
+    }
+
+    audioContext =
+        new (window.AudioContext ||
+        window.webkitAudioContext)();
+
+    engineOscillator =
+        audioContext.createOscillator();
+
+    engineGain =
+        audioContext.createGain();
+
+    engineOscillator.type = "sawtooth";
+
+    engineOscillator.frequency.value = 90;
+
+    engineGain.gain.value = 0.04;
+
+    engineOscillator.connect(
+        engineGain
+    );
+
+    engineGain.connect(
+        audioContext.destination
+    );
+
+    engineOscillator.start();
+}
+
+gameLoop();
+</script>
+
+</body>
+</html>
