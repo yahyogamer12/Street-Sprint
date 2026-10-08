@@ -95,30 +95,93 @@
     background: white;
     color: black;
 }
+
+#startButton:hover {
+    background: white;
+    color: black;
+}
+
 #mobileControls {
     display: none;
 }
 
-@media (max-width: 600px) {
+#mobileControls button {
+    font-family: Impact, Haettenschweiler, "Arial Black", sans-serif;
+    font-size: 30px;
+    font-weight: 900;
+
+    color: white;
+    background: #111;
+
+    border: 4px solid white;
+    border-radius: 6px;
+
+    cursor: pointer;
+
+    touch-action: manipulation;
+    user-select: none;
+}
+
+#restartButton {
+    display: none;
+
+    position: fixed;
+    left: 50%;
+    bottom: 125px;
+
+    transform: translateX(-50%);
+
+    z-index: 20;
+
+    padding: 18px 30px;
+
+    font-family: Impact, Haettenschweiler, "Arial Black", sans-serif;
+    font-size: 30px;
+    font-weight: 900;
+    letter-spacing: 3px;
+
+    color: white;
+    background: #111;
+
+    border: 4px solid white;
+    border-radius: 6px;
+
+    cursor: pointer;
+
+    touch-action: manipulation;
+    user-select: none;
+}
+
+#restartButton:active {
+    background: white;
+    color: black;
+    transform: translateX(-50%) scale(0.92);
+}
+
+@media (max-width: 600px), (pointer: coarse) {
+
     #mobileControls {
         display: flex;
+
         position: fixed;
         bottom: 20px;
         left: 0;
-        width: 100%;
+        right: 0;
+
         justify-content: space-between;
-        padding: 0 20px;
+
+        padding: 0 25px;
+
         z-index: 20;
+
         pointer-events: none;
     }
 
     #mobileControls button {
-        width: 85px;
-        height: 85px;
-        font-size: 36px;
+        width: 110px;
+        height: 90px;
+
         pointer-events: auto;
-        touch-action: manipulation;
-        user-select: none;
     }
 
     #mobileControls button:active {
@@ -126,7 +189,13 @@
         color: black;
         transform: scale(0.92);
     }
+
+    #restartButton.show {
+        display: block;
+    }
 }
+
+</style>
 
     </style>
 
@@ -148,9 +217,18 @@
 
 </div>
 
+
 <canvas id="game" width="900" height="600"></canvas>
 
+<div id="mobileControls">
+    <button id="leftButton">◀</button>
+    <button id="rightButton">▶</button>
+</div>
+
+<button id="restartButton">RESTART</button>
+
 <script>
+
 "use strict";
 
 // =========================================
@@ -327,6 +405,8 @@ gameRunning = true;
 // =========================================
 
 function resetGame() {
+
+    document.getElementById("restartButton").classList.remove("show");
 
     traffic = [];
 
@@ -578,6 +658,8 @@ function update() {
 function endGame() {
 
     gameRunning = false;
+
+document.getElementById("restartButton").classList.add("show");
 
     const finalScore =
         Math.floor(score);
@@ -1078,20 +1160,26 @@ function startEngineSound() {
 
 gameLoop();
 
-gameLoop();
-
-document.getElementById("leftButton").addEventListener("click", () => {
+document.getElementById("leftButton").addEventListener("pointerdown", (event) => {
+    event.preventDefault();
     changeLane(-1);
 });
 
-document.getElementById("rightButton").addEventListener("click", () => {
+document.getElementById("rightButton").addEventListener("pointerdown", (event) => {
+    event.preventDefault();
     changeLane(1);
+});
+
+document.getElementById("restartButton").addEventListener("pointerdown", (event) => {
+    event.preventDefault();
+
+    if (!gameRunning) {
+        resetGame();
+        gameRunning = true;
+    }
 });
 
 </script>
 
-
-</script>
-<div id="mobileControls"> <button id="leftButton">◀</button> <button id="rightButton">▶</button> </div>
 </body>
 </html>
