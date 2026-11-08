@@ -7,7 +7,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <style>
         * {
@@ -963,7 +963,7 @@ function drawHUD() {
     ctx.fillStyle = "#ffffff";
 
     ctx.font =
-        "bold 28px Rajdhani";
+        "bold 28px Roboto";
 
     ctx.fillText(
         "STREET SPRINT",
@@ -973,7 +973,7 @@ function drawHUD() {
 
 
 ctx.font =
-    "18px Rajdhani";
+    "18px Roboto";
 
 ctx.fillText(
     `Score: ${Math.floor(score)}`,
@@ -989,7 +989,7 @@ ctx.fillText(
 
 
     ctx.font =
-        "15px Rajdhani";
+        "15px Roboto";
 
     ctx.fillText(
         "← → / A D",
@@ -1026,7 +1026,7 @@ function drawGameOver() {
     ctx.fillStyle = "#ffffff";
 
     ctx.font =
-        "bold 64px Rajdhani";
+        "bold 64px Roboto";
 
     ctx.fillText(
         "CRASH!",
@@ -1036,7 +1036,7 @@ function drawGameOver() {
 
 
     ctx.font =
-        "28px Rajdhani";
+        "28px Roboto";
 
     ctx.fillText(
         `Score: ${Math.floor(score)}`,
@@ -1046,7 +1046,7 @@ function drawGameOver() {
 
 
     ctx.font =
-        "20px Rajdhani";
+        "20px Roboto";
 
     ctx.textAlign = "left";
 }
@@ -1155,7 +1155,7 @@ function startEngineSound() {
     engineOscillator.start();
 }
 
-document.fonts.load("700 64px Rajdhani").then(() => {
+document.fonts.load("700 64px Roboto").then(() => {
     gameLoop();
 });
 
