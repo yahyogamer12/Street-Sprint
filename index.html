@@ -5,6 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Street Sprint</title>
 
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+
     <style>
         * {
             box-sizing: border-box;
@@ -959,7 +963,7 @@ function drawHUD() {
     ctx.fillStyle = "#ffffff";
 
     ctx.font =
-        "bold 28px Arial";
+        "bold 28px Rajdhani";
 
     ctx.fillText(
         "STREET SPRINT",
@@ -968,24 +972,24 @@ function drawHUD() {
     );
 
 
+ctx.font =
+    "18px Rajdhani";
+
+ctx.fillText(
+    `Score: ${Math.floor(score)}`,
+    35,
+    80
+);
+
+ctx.fillText(
+    `Best: ${bestScore}`,
+    160,
+    80
+);
+
+
     ctx.font =
-        "18px Arial";
-
-    ctx.fillText(
-        `Score: ${Math.floor(score)}`,
-        35,
-        80
-    );
-
-    ctx.fillText(
-        `Best: ${bestScore}`,
-        160,
-        80
-    );
-
-
-    ctx.font =
-        "15px Arial";
+        "15px Rajdhani";
 
     ctx.fillText(
         "← → / A D",
@@ -1022,7 +1026,7 @@ function drawGameOver() {
     ctx.fillStyle = "#ffffff";
 
     ctx.font =
-        "bold 64px Arial";
+        "bold 64px Rajdhani";
 
     ctx.fillText(
         "CRASH!",
@@ -1032,7 +1036,7 @@ function drawGameOver() {
 
 
     ctx.font =
-        "28px Arial";
+        "28px Rajdhani";
 
     ctx.fillText(
         `Score: ${Math.floor(score)}`,
@@ -1042,7 +1046,7 @@ function drawGameOver() {
 
 
     ctx.font =
-        "20px Arial";
+        "20px Rajdhani";
 
     ctx.textAlign = "left";
 }
@@ -1151,7 +1155,9 @@ function startEngineSound() {
     engineOscillator.start();
 }
 
-gameLoop();
+document.fonts.load("700 64px Rajdhani").then(() => {
+    gameLoop();
+});
 
 document.getElementById("leftButton").addEventListener("pointerdown", (event) => {
     event.preventDefault();
